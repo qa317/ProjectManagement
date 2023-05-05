@@ -44,8 +44,8 @@ if st.sidebar.button('Register'):
 else:
     st.title('Login')
     with st.beta_container():
-    username = st.text_input('Username')
-    password = st.text_input('Password', type='password')
+         username = st.text_input('Username')
+         password = st.text_input('Password', type='password')
 
     if st.button('Login'):
         # Check if the username and password are correct
