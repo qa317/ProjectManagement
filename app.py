@@ -26,26 +26,26 @@ CREATE TABLE IF NOT EXISTS tasks (
 )
 ''')
 
-st.title('Task Manager')
+st.title('Task Manager Login')
 
-# Add register page
-if st.sidebar.button('Register'):
-    new_username = st.sidebar.text_input('Username')
-    new_password = st.sidebar.text_input('Password', type='password')
-    new_role = st.sidebar.selectbox('Role', ['Admin', 'Team Head', 'Team Member'])
-    if new_username and new_password and new_role:
-        conn.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', (new_username, new_password, new_role))
-        conn.commit()
-        st.sidebar.success('User registered successfully')
+# Add a registration page
+if st.button('Register'):
+    st.subheader('Create Admin Account')
+    username = st.text_input('Username')
+    password = st.text_input('Password', type='password')
+    confirm_password = st.text_input('Confirm Password', type='password')
+    if password != confirm_password:
+        st.error('Password does not match the confirm password.')
     else:
-        st.sidebar.warning('Please fill in all the fields')
+        role = 'Admin'
+        conn.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', (username, password, role))
+        conn.commit()
+        st.success(f'Admin account for {username} created successfully. Please login.')
 
-# Add login page
+# Add a login page
 else:
-    st.title('Login')
-    with st.beta_container():
-         username = st.text_input('Username')
-         password = st.text_input('Password', type='password')
+    username = st.text_input('Username')
+    password = st.text_input('Password', type='password')
 
     if st.button('Login'):
         # Check if the username and password are correct
@@ -80,79 +80,74 @@ else:
                     st.success('User deleted successfully')
                     users = pd.read_sql_query('SELECT username, role FROM users', conn)
                     st.write(users)
-                    
+
                 # Update a user's role
                 update_username = st.selectbox('Select User to Update', users['username'].tolist())
                 update_role = st.selectbox('New Role', ['Team Head', 'Team Member'])
                 if st.button('Update Role'):
-                   conn.execute('UPDATE users SET role=? WHERE username=?', (update_role, update_username))
-                   conn.commit()
-                   st.success('Role updated successfully')
-                   users = pd.read_sql_query('SELECT username, role FROM users', conn)
-                   st.write(users)
+                    conn.execute('UPDATE users SET role=? WHERE username=?', (update_role, update_username))
+                    conn.commit()
+                    st.success('Role updated successfully')
+                    users = pd.read_sql_query('SELECT username, role FROM users', conn)
+                    st.write(users)
             elif role == 'Team Head':
                 # Show the Team Head dashboard
                 st.title('Team Head Dashboard')
-            
-                # Create a new project
-                project_name = st.text_input('Project Name')
-                if st.button('Create Project'):
-                    conn.execute('INSERT INTO tasks (task_name) VALUES (?)', (project_name,))
-                    conn.commit()
-                    st.success(f'Project "{project_name}" created successfully')
-
-                # Create a new task
-                task_name = st.text_input('Task Name')
-                task_description = st.text_area('Task Description')
-                task_deadline = st.date_input('Task Deadline')
-                task_repeat = st.selectbox('Repeat Task', ['Daily', 'Weekly', 'No'])
-                team_members = st.multiselect('Team Members', users['username'].tolist())
-
-                if st.button('Create Task'):
-                   team_members_str = ",".join(team_members)
-                   conn.execute('INSERT INTO tasks (task_name, task_description, task_deadline, task_repeat, team_members) VALUES (?, ?, ?, ?, ?)', (task_name, task_description, task_deadline, task_repeat, team_members_str))
-                   conn.commit()
-                   st.success('Task created successfully')
-
-                # Show a table of all the tasks
-                tasks = pd.read_sql_query('SELECT * FROM tasks', conn)
+                # Show a table of all the tasks assigned to the team
+                tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
                 st.write(tasks)
 
-                # Update a task's status
-                update_id = st.selectbox('Select Task to Update', tasks['id'].tolist())
-                update_status = st.selectbox('New Status', ['Pending', 'In Progress', 'Complete'])
-                if st.button('Update Status'):
-                    conn.execute('UPDATE tasks SET task_status=? WHERE id=?', (update_status, update_id))
-                    conn.commit()
-                    st.success('Status updated successfully')
-                    tasks = pd.read_sql_query('SELECT * FROM tasks', conn)
-                    st.write(tasks)
+                # Add a new task
+                task_name = st.text_input('Task Name')
+                task_description = st.text_area('Task Description')
+                task_deadline = st.text_input('Task Deadline (YYYY-MM-DD)')
+                task_repeat = st.selectbox('Task Repeat', ['', 'Daily', 'Weekly', 'Monthly'])
+                team_members = st.multiselect('Assign to Team Members', pd.read_sql_query('SELECT username FROM users WHERE role=?', conn, params=('Team Member',))['username'].tolist())
+                if st.button('Add Task'):
+                   team_members_str = ','.join(team_members)
+                   conn.execute('INSERT INTO tasks (task_name, task_description, task_deadline, task_repeat, team_members) VALUES (?, ?, ?, ?, ?)', (task_name, task_description, task_deadline, task_repeat, team_members_str))
+                   conn.commit()
+                   st.success('Task added successfully')
+                   tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
+                   st.write(tasks)
 
                 # Delete a task
-                delete_id = st.selectbox('Select Task to Delete', tasks['id'].tolist())
+                delete_task_id = st.selectbox('Select Task to Delete', tasks['id'].tolist())
                 if st.button('Delete Task'):
-                    conn.execute('DELETE FROM tasks WHERE id=?', (delete_id,))
-                    conn.commit()
-                    st.success('Task deleted successfully')
-                    tasks = pd.read_sql_query('SELECT * FROM tasks', conn)
-                    st.write(tasks)
-                
+                   conn.execute('DELETE FROM tasks WHERE id=?', (delete_task_id,))
+                   conn.commit()
+                   st.success('Task deleted successfully')
+                   tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
+                   st.write(tasks)
+
+                # Update a task's status
+                update_task_id = st.selectbox('Select Task to Update', tasks['id'].tolist())
+                update_task_status = st.selectbox('New Status', ['Pending', 'In Progress', 'Completed'])
+                if st.button('Update Status'):
+                   conn.execute('UPDATE tasks SET task_status=? WHERE id=?', (update_task_status, update_task_id))
+                   conn.commit()
+                   st.success('Status updated successfully')
+                   tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
+                   st.write(tasks)
+
             elif role == 'Team Member':
                 # Show the Team Member dashboard
                 st.title('Team Member Dashboard')
 
-                # Show a table of all the tasks assigned to the user
+                # Show a table of all the tasks assigned to the team member
                 tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
                 st.write(tasks)
 
                 # Update a task's status
-                update_id = st.selectbox('Select Task to Update', tasks['id'].tolist())
-                update_status = st.selectbox('New Status', ['Pending', 'In Progress', 'Complete'])
+                update_task_id = st.selectbox('Select Task to Update', tasks['id'].tolist())
+                update_task_status = st.selectbox('New Status', ['Pending', 'In Progress', 'Completed'])
                 if st.button('Update Status'):
-                    conn.execute('UPDATE tasks SET task_status=? WHERE id=?', (update_status, update_id))
-                    conn.commit()
-                    st.success('Status updated successfully')
-                    tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
-                    st.write(tasks)
+                   conn.execute('UPDATE tasks SET task_status=? WHERE id=?', (update_task_status, update_task_id))
+                   conn.commit()
+                   st.success('Status updated successfully')
+                   tasks = pd.read_sql_query('SELECT * FROM tasks WHERE team_members LIKE ?', (f'%{username}%',))
+                   st.write(tasks)
+
         else:
-            st.error('Invalid username or password')
+            st.error('Incorrect username or password')
+
