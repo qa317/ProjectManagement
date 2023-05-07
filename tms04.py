@@ -32,7 +32,7 @@ projects = []
 tasks = []
 
 # Function to check user credentials
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def check_credentials(username, password, role):
     user = users.get(username)
     if user and user["password"] == password and user["role"] == role:
@@ -40,30 +40,30 @@ def check_credentials(username, password, role):
     return False
 
 # Function to add a new user
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def add_user(username, password, role):
     users[username] = {"password": password, "role": role}
 
 # Function to delete a user
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def delete_user(username):
     if username in users:
         del users[username]
 
 # Function to update a user's role
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def update_user_role(username, new_role):
     if username in users:
         users[username]["role"] = new_role
 
 # Function to create a new project
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def create_project(name):
     project = {"name": name, "tasks": [], "status": "Not Started"}
     projects.append(project)
 
 # Function to get project by name
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def get_project_by_name(name):
     for project in projects:
         if project["name"] == name:
@@ -71,7 +71,7 @@ def get_project_by_name(name):
     return None
 
 # Function to add a new task to a project
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def add_task(project_name, name, description, deadline, assigned_to):
     task = {
         "project_name": project_name,
@@ -87,13 +87,13 @@ def add_task(project_name, name, description, deadline, assigned_to):
             project["tasks"].append(task)
 
 # Function to update task status
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def update_task_status(task_name, new_status):
     for task in tasks:
         if task["name"] == task_name:
             task["status"] = new_status
             break
-@st.cache(allow_output_mutation=True)
+@st.cache_data(allow_output_mutation=True)
 def update_project_status(project_name, new_status):
     for project in projects:
         if project["name"] == project_name:
