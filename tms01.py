@@ -108,8 +108,7 @@ def admin_page():
 
     # Delete a user
     st.subheader("Delete User")
-        # Select User
-    delete_username = st.selectbox("Select User", list(users.keys()), key="delete_username")
+    delete_username = st.selectbox("Select User", list(users.keys()),    key="delete_username")
     if st.button("Delete User"):
         if delete_username:
             delete_user(delete_username)
@@ -192,7 +191,7 @@ def team_member_page():
     status = st.selectbox("Status", ["Not Started", "Started", "Completed", "Cancelled"], key="status")
     if st.button("Update Status"):
         if task_name:
-                        st.success(f"Task '{task_name}' status updated to '{status}' successfully!")
+            st.success(f"Task '{task_name}' status updated to '{status}' successfully!")
         else:
             st.error("Please select a task.")
 
