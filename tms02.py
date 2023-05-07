@@ -1,5 +1,9 @@
 import streamlit as st
 import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 # User credentials
 admin_username = "admin"
@@ -108,8 +112,10 @@ def admin_page():
         if new_username and new_password and new_role:
             add_user(new_username, new_password, new_role)
             st.success(f"User '{new_username}' added successfully!")
+            logging.info(f"User '{new_username}' added successfully!")  # Log successful user addition
         else:
             st.error("Please provide all the user details.")
+            logging.error("Incomplete user details provided!")  # Log error for incomplete user details
 
     # Delete a user
     st.subheader("Delete User")
@@ -146,8 +152,10 @@ def team_head_page():
         if new_project_name:
             create_project(new_project_name)
             st.success(f"Project '{new_project_name}' created successfully!")
+            logging.info(f"Project '{new_project_name}' created successfully!")  # Log successful project creation
         else:
             st.error("Please provide a project name.")
+            logging.error("Project name not provided!")  # Log error for missing project name
 
     # View projects
     st.subheader("View Projects")
@@ -190,6 +198,7 @@ def team_member_page():
     if punch_in_out:
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
         st.success(f"Punched {'In' if punch_in_out else 'Out'} at {current_time}.")
+        logging.info(f"Punched {'In' if punch_in_out else 'Out'} at {current_time}.")  # Log punch in/out event
 
     # View Dashboard
     st.subheader("Dashboard")
@@ -228,6 +237,7 @@ def main():
     if st.sidebar.button("Login"):
         if check_credentials(username, password, role):
             st.sidebar.success("Logged in successfully!")
+            logging.info("Logged in successfully!")  # Log successful login
             if role == "Admin":
                 admin_page()
             elif role == "Team Head":
@@ -236,6 +246,7 @@ def main():
                 team_member_page()
         else:
             st.sidebar.error("Invalid username or password.")
+            logging.error("Invalid username or password!")  # Log login failure
 
 if __name__ == "__main__":
     main()
