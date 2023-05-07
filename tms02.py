@@ -1,0 +1,275 @@
+import streamlit as st
+import datetime
+from streamlit_SessionState import get, _set
+
+# User credentials
+admin_username = "admin"
+admin_password = "admin123"
+
+team_head_username = "teamhead"
+team_head_password = "head123"
+
+team_member_username = "teammember"
+team_member_password = "member123"
+
+# User roles
+ROLES = ["Admin", "Team Head", "Team Member"]
+
+# User storage
+users = {
+    admin_username: {"password": admin_password, "role": "Admin"},
+    team_head_username: {"password": team_head_password, "role": "Team Head"},
+    team_member_username: {"password": team_member_password, "role": "Team Member"},
+}
+
+# Project storage
+projects = []
+
+# Task storage
+tasks = []
+
+# Function to check user credentials
+def check_credentials(username, password, role):
+    user = users.get(username)
+    if user and user["password"] == password and user["role"] == role:
+        return True
+    return False
+
+# Function to add a new user
+def add_user(username, password, role):
+    users[username] = {"password": password, "role": role}
+
+# Function to delete a user
+def delete_user(username):
+    if username in users:
+        del users[username]
+
+# Function to update a user's role
+def update_user_role(username, new_role):
+    if username in users:
+        users[username]["role"] = new_role
+
+# Function to create a new project
+def create_project(name):
+    project = {"name": name, "tasks": []}
+    projects.append(project)
+
+# Function to add a new task to a project
+def add_task(project_name, name, description, deadline, assigned_to, repeat=None):
+    task = {
+        "project_name": project_name,
+        "name": name,
+        "description": description,
+        "deadline": deadline,
+        "assigned_to": assigned_to,
+        "status": "Not Started",
+        "repeat": repeat,
+        "comments": [],
+        "progress": [],
+    }
+    tasks.append(task)
+    for project in projects:
+        if project["name"] == project_name:
+            project["tasks"].append(task)
+
+# Function to add a comment/remark to a task
+def add_comment(task_name, comment):
+    for task in tasks:
+        if task["name"] == task_name:
+            task["comments"].append(comment)
+
+# Function to add daily progress for a task
+def add_progress(task_name, progress):
+    for task in tasks:
+        if task["name"] == task_name:
+            task["progress"].append(progress)
+
+# Function to get a project by name
+def get_project_by_name(project_name):
+    for project in projects:
+        if project["name"] == project_name:
+            return project
+    return None
+
+# Login page
+def login_page():
+    st.title("Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if check_credentials(username, password, "Admin"):
+            _set("user", {"username": username, "role": "Admin"})
+            st.success("Logged in as Admin!")
+        elif check_credentials(username, password, "Team Head"):
+            _set("user", {"username": username, "role": "Team Head"})
+            st.success("Logged in as Team Head!")
+        elif check_credentials(username, password, "Team Member"):
+            _set("user", {"username": username, "role": "Team Member"})
+            st.success("Logged in as Team Member!")
+        else:
+            st.error("Invalid username or password.")
+
+def main():
+    session_state = get(user={"username": "", "role": ""})
+
+    if session_state.user["role"] == "":
+        login_page()
+    elif session_state.user["role"] == "Admin":
+        admin_page()
+    elif session_state.user["role"] == "Team Head":
+        team_head_page()
+    elif session_state.user["role"] == "Team Member":
+        team_member_page()
+
+# Admin page
+def admin_page():
+    st.title("Admin Page")
+
+    st.header("User Management")
+
+    # Display existing users
+    st.subheader("Existing Users")
+    for username, user_data in users.items():
+        st.write(f"Username: {username}, Role: {user_data['role']}")
+
+    # Add new user
+    st.subheader("Add New User")
+    new_username = st.text_input("Username", key="new_username")
+    new_password = st.text_input("Password", type="password", key="new_password")
+    new_role = st.selectbox("Role", ROLES, key="new_role_admin")
+    if st.button("Add User"):
+        if new_username and new_password and new_role:
+            add_user(new_username, new_password, new_role)
+            st.success(f"User '{new_username}' added successfully!")
+        else:
+            st.error("Please provide all the user details.")
+
+    # Delete a user
+    st.subheader("Delete User")
+    delete_username = st.selectbox("Select User", list(users.keys()), key="delete_username")
+    if st.button("Delete User"):
+        if delete_username:
+            delete_user(delete_username)
+            st.success(f"User '{delete_username}' deleted successfully!")
+        else:
+            st.error("Please select a user to delete.")
+
+    # Update user role
+    st.subheader("Update User Role")
+    update_username = st.selectbox("Select User", list(users.keys()), key="update_username")
+    new_role = st.selectbox("New Role", ROLES, key="new_role_update")
+    if st.button("Update Role"):
+        if update_username and new_role:
+            update_user_role(update_username, new_role)
+            st.success(f"User '{update_username}' role updated successfully!")
+        else:
+            st.error("Please select a user and provide a new role.")
+
+# Team Head page
+def team_head_page():
+    st.title("Team Head Page")
+
+    st.header("Project Management")
+
+    # Create a new project
+    st.subheader("Create Project")
+    new_project_name = st.text_input("Project Name", key="new_project_name")
+    if st.button("Create"):
+        if new_project_name:
+            create_project(new_project_name)
+            st.success(f"Project '{new_project_name}' created successfully!")
+        else:
+            st.error("Please provide a project name.")
+
+    # View projects
+    st.subheader("View Projects")
+    project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="project_name_team_head")
+    if st.button("View"):
+        if project_name:
+            project = get_project_by_name(project_name)
+            if project:
+                st.write(f"Project Name: {project['name']}")
+                st.write(f"Start Date: {project['start_date']}")
+                st.write(f"End Date: {project['end_date']}")
+                st.write(f"Status: {project['status']}")
+            else:
+                st.error("Project not found.")
+        else:
+                        st.error("Please select a project.")
+
+    # Update project status
+    st.subheader("Update Project Status")
+    update_project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="update_project_name")
+    new_status = st.selectbox("New Status", ["Not Started", "In Progress", "Completed"], key="new_status_team_head")
+    if st.button("Update"):
+        if update_project_name and new_status:
+            update_project_status(update_project_name, new_status)
+            st.success(f"Project '{update_project_name}' status updated successfully!")
+        else:
+            st.error("Please select a project and provide a new status.")
+
+# Team Member page
+def team_member_page():
+    st.title("Team Member Page")
+
+    st.header("Task Management")
+
+    # Punch in - punch out
+    st.subheader("Punch In - Punch Out")
+    punch_in_out = st.button("Punch In / Out")
+
+    if punch_in_out:
+        current_time = datetime.datetime.now().strftime("%H:%M:%S")
+        st.success(f"Punched {'In' if punch_in_out else 'Out'} at {current_time}.")
+
+    # View Dashboard
+    st.subheader("Dashboard")
+    st.write("Total assigned tasks:")
+    st.write("Completed tasks:")
+    st.write("Details about timely completion of tasks:")
+    st.write("Upcoming deadlines:")
+
+    # Check individual assigned tasks
+    st.subheader("Assigned Tasks")
+    st.write("Task 1")
+    st.write("Task 2")
+    st.write("Task 3")
+
+    # Change task status
+    st.subheader("Change Task Status")
+    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_status")
+    status = st.selectbox("Status", ["Not Started", "Started", "Completed", "Cancelled"], key="status")
+    if st.button("Update Status"):
+        if task_name:
+            st.success(f"Task '{task_name}' status updated to '{status}' successfully!")
+        else:
+            st.error("Please select a task.")
+
+    # Add comment/remark for a task
+    st.subheader("Add Comment / Remark")
+    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_comment")
+    comment = st.text_area("Comment", key="comment")
+    if st.button("Add Comment"):
+        if task_name and comment:
+            add_comment(task_name, comment)
+            st.success(f"Comment added to task '{task_name}' successfully!")
+        else:
+            st.error("Please select a task and provide a comment.")
+
+    # Add daily progress for a task
+    st.subheader("Add Daily Progress")
+    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_progress")
+    progress = st.text_input("Daily Progress", key="progress")
+    if st.button("Add Progress"):
+        if task_name and progress:
+            add_progress(task_name, progress)
+            st.success(f"Daily progress added to task '{task_name}' successfully!")
+        else:
+            st.error("Please select a task and provide daily progress.")
+
+
+if __name__ == "__main__":
+    main()
+
+
