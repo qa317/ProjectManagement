@@ -98,7 +98,7 @@ def admin_page():
     st.subheader("Add New User")
     new_username = st.text_input("Username", key="new_username")
     new_password = st.text_input("Password", type="password", key="new_password")
-    new_role = st.selectbox("Role", ROLES, key="new_role")
+    new_role = st.selectbox("Role", ROLES, key="new_role_admin")
     if st.button("Add User"):
         if new_username and new_password and new_role:
             add_user(new_username, new_password, new_role)
@@ -108,7 +108,7 @@ def admin_page():
 
     # Delete a user
     st.subheader("Delete User")
-    delete_username = st.selectbox("Select User", list(users.keys()),    key="delete_username")
+    delete_username = st.selectbox("Select User", list(users.keys()), key="delete_username")
     if st.button("Delete User"):
         if delete_username:
             delete_user(delete_username)
@@ -119,13 +119,14 @@ def admin_page():
     # Update user role
     st.subheader("Update User Role")
     update_username = st.selectbox("Select User", list(users.keys()), key="update_username")
-    new_role = st.selectbox("New Role", ROLES, key="new_role")
+    new_role = st.selectbox("New Role", ROLES, key="new_role_update")
     if st.button("Update Role"):
         if update_username and new_role:
             update_user_role(update_username, new_role)
             st.success(f"User '{update_username}' role updated successfully!")
         else:
             st.error("Please select a user and provide a new role.")
+
 
 # Team Head page
 def team_head_page():
