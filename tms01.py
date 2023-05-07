@@ -135,29 +135,42 @@ def team_head_page():
     st.header("Project Management")
 
     # Create a new project
-    st.subheader("Create New Project")
-    project_name = st.text_input("Project Name", key="project_name")
-    if st.button("Create Project"):
-        if project_name:
-            create_project(project_name)
-            st.success(f"Project '{project_name}' created successfully!")
+    st.subheader("Create Project")
+    new_project_name = st.text_input("Project Name", key="new_project_name")
+    if st.button("Create"):
+        if new_project_name:
+            create_project(new_project_name)
+            st.success(f"Project '{new_project_name}' created successfully!")
         else:
             st.error("Please provide a project name.")
 
-    # Add a task to a project
-    st.subheader("Add Task to Project")
-    project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="project_name")
-    task_name = st.text_input("Task Name", key="task_name")
-    description = st.text_area("Description", key="description")
-    deadline = st.date_input("Deadline", key="deadline")
-    assigned_to = st.text_input("Assigned To", key="assigned_to")
-    repeat = st.selectbox("Repeat", [None, "Daily", "Weekly"], key="repeat")
-    if st.button("Add Task"):
-        if project_name and task_name and description and deadline and assigned_to:
-            add_task(project_name, task_name, description, deadline, assigned_to, repeat)
-            st.success(f"Task '{task_name}' added to project '{project_name}' successfully!")
+    # View projects
+    st.subheader("View Projects")
+    project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="project_name_team_head")
+    if st.button("View"):
+        if project_name:
+            project = get_project_by_name(project_name)
+            if project:
+                st.write(f"Project Name: {project['name']}")
+                st.write(f"Start Date: {project['start_date']}")
+                st.write(f"End Date: {project['end_date']}")
+                st.write(f"Status: {project['status']}")
+            else:
+                st.error("Project not found.")
         else:
-            st.error("Please provide all the task details.")
+            st.error("Please select a project.")
+
+    # Update project status
+    st.subheader("Update Project Status")
+    update_project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="update_project_name")
+    new_status = st.selectbox("New Status", ["Not Started", "In Progress", "Completed"], key="new_status_team_head")
+    if st.button("Update"):
+        if update_project_name and new_status:
+            update_project_status(update_project_name, new_status)
+            st.success(f"Project '{update_project_name}' status updated successfully!")
+        else:
+            st.error("Please select a project and provide a new status.")
+
 
 # Team Member page
 def team_member_page():
