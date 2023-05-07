@@ -256,7 +256,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-streamlit.run(main, debug=True)
+
 
 
 
