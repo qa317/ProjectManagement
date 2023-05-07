@@ -201,7 +201,7 @@ def team_member_page():
 
     # Change task status
     st.subheader("Change Task Status")
-    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name")
+    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_status")
     status = st.selectbox("Status", ["Not Started", "Started", "Completed", "Cancelled"], key="status")
     if st.button("Update Status"):
         if task_name:
@@ -211,7 +211,7 @@ def team_member_page():
 
     # Add comment/remark for a task
     st.subheader("Add Comment / Remark")
-    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name")
+    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_comment")
     comment = st.text_area("Comment", key="comment")
     if st.button("Add Comment"):
         if task_name and comment:
@@ -222,7 +222,7 @@ def team_member_page():
 
     # Add daily progress for a task
     st.subheader("Add Daily Progress")
-    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name")
+    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_progress")
     progress = st.text_input("Daily Progress", key="progress")
     if st.button("Add Progress"):
         if task_name and progress:
@@ -230,6 +230,7 @@ def team_member_page():
             st.success(f"Daily progress added to task '{task_name}' successfully!")
         else:
             st.error("Please select a task and provide daily progress.")
+
 
 # Main function
 def main():
