@@ -1,8 +1,5 @@
 import streamlit as st
 import datetime
-from streamlit.ScriptRunner import RerunException
-from streamlit.ScriptRequestQueue import RerunData
-from streamlit import SessionState
 
 # User credentials
 admin_username = "admin"
@@ -56,8 +53,15 @@ def create_project(name):
     project = {"name": name, "tasks": []}
     projects.append(project)
 
+# Function to get project by name
+def get_project_by_name(name):
+    for project in projects:
+        if project["name"] == name:
+            return project
+    return None
+
 # Function to add a new task to a project
-def add_task(project_name, name, description, deadline, assigned_to, repeat=None):
+def add_task(project_name, name, description, deadline, assigned_to):
     task = {
         "project_name": project_name,
         "name": name,
@@ -65,65 +69,25 @@ def add_task(project_name, name, description, deadline, assigned_to, repeat=None
         "deadline": deadline,
         "assigned_to": assigned_to,
         "status": "Not Started",
-        "repeat": repeat,
-        "comments": [],
-        "progress": [],
     }
     tasks.append(task)
     for project in projects:
         if project["name"] == project_name:
             project["tasks"].append(task)
 
-# Function to add a comment/remark to a task
-def add_comment(task_name, comment):
+# Function to update task status
+def update_task_status(task_name, new_status):
     for task in tasks:
         if task["name"] == task_name:
-            task["comments"].append(comment)
+            task["status"] = new_status
+            break
 
-# Function to add daily progress for a task
-def add_progress(task_name, progress):
-    for task in tasks:
-        if task["name"] == task_name:
-            task["progress"].append(progress)
-
-# Function to get a project by name
-def get_project_by_name(project_name):
+def update_project_status(project_name, new_status):
     for project in projects:
         if project["name"] == project_name:
-            return project
-    return None
-
-# Login page
-def login_page():
-    st.title("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-
-    if st.button("Login"):
-        if check_credentials(username, password, "Admin"):
-            _set("user", {"username": username, "role": "Admin"})
-            st.success("Logged in as Admin!")
-        elif check_credentials(username, password, "Team Head"):
-            _set("user", {"username": username, "role": "Team Head"})
-            st.success("Logged in as Team Head!")
-        elif check_credentials(username, password, "Team Member"):
-            _set("user", {"username": username, "role": "Team Member"})
-            st.success("Logged in as Team Member!")
-        else:
-            st.error("Invalid username or password.")
-
-def main():
-    session_state = get(user={"username": "", "role": ""})
-
-    if session_state.user["role"] == "":
-        login_page()
-    elif session_state.user["role"] == "Admin":
-        admin_page()
-    elif session_state.user["role"] == "Team Head":
-        team_head_page()
-    elif session_state.user["role"] == "Team Member":
-        team_member_page()
-
+            project["status"] = new_status
+            break
+        
 # Admin page
 def admin_page():
     st.title("Admin Page")
@@ -168,6 +132,7 @@ def admin_page():
         else:
             st.error("Please select a user and provide a new role.")
 
+
 # Team Head page
 def team_head_page():
     st.title("Team Head Page")
@@ -198,7 +163,7 @@ def team_head_page():
             else:
                 st.error("Project not found.")
         else:
-                        st.error("Please select a project.")
+            st.error("Please select a project.")
 
     # Update project status
     st.subheader("Update Project Status")
@@ -210,6 +175,7 @@ def team_head_page():
             st.success(f"Project '{update_project_name}' status updated successfully!")
         else:
             st.error("Please select a project and provide a new status.")
+
 
 # Team Member page
 def team_member_page():
@@ -240,38 +206,42 @@ def team_member_page():
 
     # Change task status
     st.subheader("Change Task Status")
-    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_status")
-    status = st.selectbox("Status", ["Not Started", "Started", "Completed", "Cancelled"], key="status")
-    if st.button("Update Status"):
-        if task_name:
-            st.success(f"Task '{task_name}' status updated to '{status}' successfully!")
+    task_name = st.selectbox("Select Task", ["Task 1","Task 2", "Task 3"], key="task_name_team_member")
+    new_status = st.selectbox("New Status", ["Not Started", "In Progress", "Completed"], key="new_status_team_member")
+    if st.button("Update"):
+        if task_name and new_status:
+            update_task_status(task_name, new_status)
+            st.success(f"Task '{task_name}' status updated successfully!")
         else:
-            st.error("Please select a task.")
+            st.error("Please select a task and provide a new status.")
 
-    # Add comment/remark for a task
-    st.subheader("Add Comment / Remark")
-    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_comment")
-    comment = st.text_area("Comment", key="comment")
-    if st.button("Add Comment"):
-        if task_name and comment:
-            add_comment(task_name, comment)
-            st.success(f"Comment added to task '{task_name}' successfully!")
+
+# Main application
+def main():
+    st.sidebar.title("User Login")
+
+    # Login credentials
+    username = st.sidebar.text_input("Username", key="username")
+    password = st.sidebar.text_input("Password", type="password", key="password")
+    role = st.sidebar.selectbox("Role", ROLES, key="role")
+
+    if st.sidebar.button("Login"):
+        if check_credentials(username, password, role):
+            st.sidebar.success("Logged in successfully!")
+            if role == "Admin":
+                admin_page()
+            elif role == "Team Head":
+                team_head_page()
+            elif role == "Team Member":
+                team_member_page()
         else:
-            st.error("Please select a task and provide a comment.")
-
-    # Add daily progress for a task
-    st.subheader("Add Daily Progress")
-    task_name = st.selectbox("Select Task", ["Task 1", "Task 2", "Task 3"], key="task_name_progress")
-    progress = st.text_input("Daily Progress", key="progress")
-    if st.button("Add Progress"):
-        if task_name and progress:
-            add_progress(task_name, progress)
-            st.success(f"Daily progress added to task '{task_name}' successfully!")
-        else:
-            st.error("Please select a task and provide daily progress.")
-
+            st.sidebar.error("Invalid username or password.")
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
