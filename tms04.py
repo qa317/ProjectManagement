@@ -223,7 +223,9 @@ def main():
     password = st.sidebar.text_input("Password", type="password", key="password")
     role = st.sidebar.selectbox("Role", ROLES, key="role")
 
-    if st.sidebar.button("Login"):
+    login_button = st.sidebar.button("Login")
+    
+    if login_button:
         if check_credentials(username, password, role):
             st.sidebar.success("Login successful.")
             logging.info(f"User '{username}' logged in as {role}.")  # Log successful login
