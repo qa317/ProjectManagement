@@ -19,53 +19,80 @@ team_member_password = "member123"
 ROLES = ["Admin", "Team Head", "Team Member"]
 
 # User storage
-st.experimental_singleton("users", default={
-    admin_username: {"password": admin_password, "role": "Admin"},
-    team_head_username: {"password": team_head_password, "role": "Team Head"},
-    team_member_username: {"password": team_member_password, "role": "Team Member"},
-})
+@st.experimental_singleton("users")
+def get_users():
+    return {
+        admin_username: {"password": admin_password, "role": "Admin"},
+        team_head_username: {"password": team_head_password, "role": "Team Head"},
+        team_member_username: {"password": team_member_password, "role": "Team Member"},
+    }
+
+users = get_users()
 
 # Project storage
-st.experimental_singleton("projects", default=[])
+@st.experimental_singleton("projects")
+def get_projects():
+    return []
+
+projects = get_projects()
 
 # Task storage
-st.experimental_singleton("tasks", default=[])
+@st.experimental_singleton("tasks")
+def get_tasks():
+    return []
+
+tasks = get_tasks()
 
 # Function to check user credentials
+@st.cache(allow_output_mutation=True)
 def check_credentials(username, password, role):
-    user = st.session_state.users.get(username)
+    users = get_users()
+    user = users.get(username)
     if user and user["password"] == password and user["role"] == role:
         return True
     return False
 
 # Function to add a new user
+@st.cache(allow_output_mutation=True)
 def add_user(username, password, role):
-    st.session_state.users[username] = {"password": password, "role": role}
+    users = get_users()
+    users[username] = {"password": password, "role": role}
 
 # Function to delete a user
+@st.cache(allow_output_mutation=True)
 def delete_user(username):
-    if username in st.session_state.users:
-        del st.session_state.users[username]
+    users = get_users()
+    if username in users:
+        del users[username]
 
 # Function to update a user's role
+@st.cache(allow_output_mutation=True)
 def update_user_role(username, new_role):
-    if username in st.session_state.users:
-        st.session_state.users[username]["role"] = new_role
+    users = get_users()
+    if username in users:
+        users[username]["role"] = new_role
 
 # Function to create a new project
+@st.cache(allow_output_mutation=True)
 def create_project(name):
+    projects = get_projects()
     project = {"name": name, "tasks": [], "status": "Not Started"}
-    st.session_state.projects.append(project)
+    projects.append(project)
 
 # Function to get project by name
+@st.cache(allow_output_mutation=True)
 def get_project_by_name(name):
-    for project in st.session_state.projects:
+    projects = get_projects()
+    for project in projects:
         if project["name"] == name:
             return project
     return None
 
 # Function to add a new task to a project
+@st.cache(allow_output_mutation=True)
 def add_task(project_name, name, description, deadline, assigned_to):
+    tasks = get_tasks()
+    projects = get_projects()
     task = {
         "project_name": project_name,
         "name": name,
@@ -74,25 +101,29 @@ def add_task(project_name, name, description, deadline, assigned_to):
         "assigned_to": assigned_to,
         "status": "Not Started",
     }
-    st.session_state.tasks.append(task)
-    for project in st.session_state.projects:
+    tasks.append(task)
+    for project in projects:
         if project["name"] == project_name:
             project["tasks"].append(task)
 
 # Function to update task status
+@st.cache(allow_output_mutation=True)
 def update_task_status(task_name, new_status):
-    for task in st.session_state.tasks:
+    tasks = get_tasks()
+    for task in tasks:
         if task["name"] == task_name:
             task["status"] = new_status
             break
-            
+
 # Function to update project status
+@st.cache(allow_output_mutation=True)
 def update_project_status(project_name, new_status):
-    for project in st.session_state.projects:
+    projects = get_projects()
+    for project in projects:
         if project["name"] == project_name:
             project["status"] = new_status
             break
-        
+
 # Admin page
 def admin_page():
     st.title("Admin Page")
@@ -101,12 +132,13 @@ def admin_page():
 
     # Display existing users
     st.subheader("Existing Users")
-    for username, user_data in st.session_state.users.items():
+    users = get_users()
+    for username, user_data in users.items():
         st.write(f"Username: {username}, Role: {user_data['role']}")
 
     # Add new user
     st.subheader("Add New User")
-    new_username = st.text_input("Username", key="new_username")    
+    new_username = st.text_input("Username", key="new_username")
     new_password = st.text_input("Password", type="password", key="new_password")
     new_role = st.selectbox("Role", ROLES, key="new_role_admin")
     if st.button("Add User"):
@@ -120,7 +152,7 @@ def admin_page():
 
     # Delete a user
     st.subheader("Delete User")
-    delete_username = st.selectbox("Select User", list(st.session_state.users.keys()), key="delete_username")
+    delete_username = st.selectbox("Select User", list(users.keys()), key="delete_username")
     if st.button("Delete User"):
         if delete_username:
             delete_user(delete_username)
@@ -130,7 +162,7 @@ def admin_page():
 
     # Update user role
     st.subheader("Update User Role")
-    update_username = st.selectbox("Select User", list(st.session_state.users.keys()), key="update_username")
+    update_username = st.selectbox("Select User", list(users.keys()), key="update_username")
     new_role = st.selectbox("New Role", ROLES, key="new_role_update")
     if st.button("Update Role"):
         if update_username and new_role:
@@ -160,7 +192,8 @@ def team_head_page():
 
     # View projects
     st.subheader("View Projects")
-    project_name = st.selectbox("Select Project", [project["name"] for project in st.session_state.projects], key="project_name_team_head")
+    projects = get_projects()
+    project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="project_name_team_head")
     if st.button("View"):
         if project_name:
             project = get_project_by_name(project_name)
@@ -173,13 +206,14 @@ def team_head_page():
             st.error("Please select a project.")
 
     # Update project status
-    st.subheader("Update Project Status")
-    update_project_name = st.selectbox("Select Project", [project["name"] for project in st.session_state.projects], key="update_project_name")
-    new_status = st.selectbox("New Status", ["Not Started", "In Progress", "Completed"], key="new_status_team_head")
-    if st.button("Update"):
-        if update_project_name and new_status:
-            update_project_status(update_project_name, new_status)
-            st.success(f"Project '{update_project_name}' status updated successfully!")
+        st.subheader("Update Project Status")
+    project_name = st.selectbox("Select Project", [project["name"] for project in projects], key="update_project_name")
+    new_status = st.selectbox("New Status", ["Not Started", "In Progress", "Completed"], key="new_status")
+    if st.button("Update Status"):
+        if project_name and new_status:
+            update_project_status(project_name, new_status)
+            st.success(f"Project '{project_name}' status updated successfully!")
+            logging.info(f"Project '{project_name}' status updated successfully!")  # Log successful project status update
         else:
             st.error("Please select a project and provide a new status.")
 
@@ -190,47 +224,51 @@ def team_member_page():
 
     st.header("Task Management")
 
-    # Punch in - punch out
-    st.subheader("Punch In - Punch Out")
-    punch_in_out = st.button("Punch In / Out", key="punch_in_out")
-
-    if punch_in_out:
-        current_time = datetime.datetime.now().strftime("%H:%M:%S")
-        st.success(f"Punched {'In' if punch_in_out else 'Out'} at {current_time}")
-        logging.info(f"Punched {'In' if punch_in_out else 'Out'} at {current_time}")  # Log punch in/out event
-
-
     # View tasks
     st.subheader("View Tasks")
-    assigned_tasks = [task for task in st.session_state.tasks if task["assigned_to"] == team_member_username]
-    if assigned_tasks:
-        for task in assigned_tasks:
-            st.write(f"Task: {task['name']}")
-            st.write(f"Project: {task['project_name']}")
-            st.write(f"Description: {task['description']}")
-            st.write(f"Deadline: {task['deadline']}")
-            st.write(f"Status: {task['status']}")
-            st.write("---")
-    else:
-        st.info("No tasks assigned.")
+    tasks = get_tasks()
+    task_names = [task["name"] for task in tasks]
+    assigned_task = st.selectbox("Select Task", task_names, key="assigned_task")
+    if st.button("View"):
+        if assigned_task:
+            task = [task for task in tasks if task["name"] == assigned_task]
+            if task:
+                task = task[0]
+                st.write(f"Task Name: {task['name']}")
+                st.write(f"Project: {task['project_name']}")
+                st.write(f"Description: {task['description']}")
+                st.write(f"Deadline: {task['deadline']}")
+                st.write(f"Status: {task['status']}")
+            else:
+                st.error("Task not found.")
+        else:
+            st.error("Please select a task.")
+
+    # Update task status
+    st.subheader("Update Task Status")
+    task_name = st.selectbox("Select Task", task_names, key="update_task_name")
+    new_status = st.selectbox("New Status", ["Not Started", "In Progress", "Completed"], key="new_task_status")
+    if st.button("Update Status"):
+        if task_name and new_status:
+            update_task_status(task_name, new_status)
+            st.success(f"Task '{task_name}' status updated successfully!")
+            logging.info(f"Task '{task_name}' status updated successfully!")  # Log successful task status update
+        else:
+            st.error("Please select a task and provide a new status.")
 
 
-# Main application
-def main():
-    st.sidebar.title("Login")
+# Login page
+def login_page():
+    st.title("Project Management System")
 
-    # User login
-    username = st.sidebar.text_input("Username", key="username")
-    password = st.sidebar.text_input("Password", type="password", key="password")
-    role = st.sidebar.selectbox("Role", ROLES, key="role")
+    st.header("Login")
 
-    login_button = st.sidebar.button("Login")
-    
-    if login_button:
+    username = st.text_input("Username", key="username")
+    password = st.text_input("Password", type="password", key="password")
+    role = st.selectbox("Role", ROLES, key="role")
+
+    if st.button("Login"):
         if check_credentials(username, password, role):
-            st.sidebar.success("Login successful.")
-            logging.info(f"User '{username}' logged in as {role}.")  # Log successful login
-
             if role == "Admin":
                 admin_page()
             elif role == "Team Head":
@@ -238,12 +276,15 @@ def main():
             elif role == "Team Member":
                 team_member_page()
         else:
-            st.sidebar.error("Invalid username, password, or role.")
-            logging.error(f"Login failed for user '{username}' with role {role}.")  # Log login failure
+            st.error("Invalid credentials.")
+            logging.error("Invalid login attempt!")  # Log invalid login attempt
+
+
+# Main function
+def main():
+    login_page()
 
 
 if __name__ == "__main__":
     main()
 
-
-   
