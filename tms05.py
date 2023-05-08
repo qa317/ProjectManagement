@@ -19,7 +19,7 @@ team_member_password = "member123"
 ROLES = ["Admin", "Team Head", "Team Member"]
 
 # User storage
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def get_users():
     return {
         admin_username: {"password": admin_password, "role": "Admin"},
@@ -28,12 +28,12 @@ def get_users():
     }
 
 # Project storage
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def get_projects():
     return []
 
 # Task storage
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def get_tasks():
     return []
 
@@ -46,34 +46,34 @@ def check_credentials(username, password, role):
     return False
 
 # Function to add a new user
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def add_user(username, password, role):
     users = get_users()
     users[username] = {"password": password, "role": role}
 
 # Function to delete a user
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def delete_user(username):
     users = get_users()
     if username in users:
         del users[username]
 
 # Function to update a user's role
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def update_user_role(username, new_role):
     users = get_users()
     if username in users:
         users[username]["role"] = new_role
 
 # Function to create a new project
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def create_project(name):
     projects = get_projects()
     project = {"name": name, "tasks": [], "status": "Not Started"}
     projects.append(project)
 
 # Function to get project by name
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def get_project_by_name(name):
     projects = get_projects()
     for project in projects:
@@ -82,7 +82,7 @@ def get_project_by_name(name):
     return None
 
 # Function to add a new task to a project
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def add_task(project_name, name, description, deadline, assigned_to):
     projects = get_projects()
     tasks = get_tasks()
@@ -100,7 +100,7 @@ def add_task(project_name, name, description, deadline, assigned_to):
             project["tasks"].append(task)
 
 # Function to update task status
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def update_task_status(task_name, new_status):
     tasks = get_tasks()
     for task in tasks:
@@ -109,7 +109,7 @@ def update_task_status(task_name, new_status):
             break
 
 # Function to update project status
-@st.cache(persist=True)
+@st.cache_data(persist=True)
 def update_project_status(project_name, new_status):
     projects = get_projects()
     for project in projects:
