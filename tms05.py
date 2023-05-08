@@ -19,7 +19,7 @@ team_member_password = "member123"
 ROLES = ["Admin", "Team Head", "Team Member"]
 
 # User storage
-@st.experimental_singleton("users")
+@st.cache_resource("users")
 def get_users():
     return {
         admin_username: {"password": admin_password, "role": "Admin"},
@@ -30,14 +30,14 @@ def get_users():
 users = get_users()
 
 # Project storage
-@st.experimental_singleton("projects")
+@st.cache_resource("projects")
 def get_projects():
     return []
 
 projects = get_projects()
 
 # Task storage
-@st.experimental_singleton("tasks")
+@st.cache_resource("tasks")
 def get_tasks():
     return []
 
