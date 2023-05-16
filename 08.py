@@ -2,9 +2,16 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 
-# Establish a connection to the SQLite database
+import os
+
+# Remove the existing database file
+if os.path.exists('task_manager.db'):
+    os.remove('task_manager.db')
+
+# Create a new database file
 conn = sqlite3.connect('task_manager.db')
 cursor = conn.cursor()
+
 
 # Create the users table if it doesn't exist
 cursor.execute('''
