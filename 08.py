@@ -261,26 +261,27 @@ def render_admin_dashboard():
     # Add a new user
     new_username = st.text_input('New Username')
     new_password = st.text_input('New Password', type='password')
-    new_role = st.selectbox('New Role', ['Team Head', 'Team Member'])
+    new_role = st.selectbox('New Role', ['Team Head', 'Team Member'], key='new_user_role')
     if st.button('Add User'):
         add_user(new_username, new_password, new_role)
         st.success('User added successfully')
         st.experimental_rerun()
 
     # Delete a user
-    delete_username = st.selectbox('Select User to Delete', [user[0] for user in users])
+    delete_username = st.selectbox('Select User to Delete', [user[0] for user in users], key='delete_user')
     if st.button('Delete User'):
         delete_user(delete_username)
         st.success('User deleted successfully')
         st.experimental_rerun()
 
     # Update a user's role
-    update_username = st.selectbox('Select User to Update', [user[0] for user in users])
-    update_role = st.selectbox('New Role', ['Team Head', 'Team Member'])
+    update_username = st.selectbox('Select User to Update', [user[0] for user in users], key='update_username')
+    update_role = st.selectbox('New Role', ['Team Head', 'Team Member'], key='update_user_role')
     if st.button('Update Role'):
         update_user_role(update_username, update_role)
         st.success('Role updated successfully')
         st.experimental_rerun()
+
 
 
 # Render the Team Head dashboard
