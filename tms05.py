@@ -130,7 +130,7 @@ def main():
     if st.button("Login"):
         if check_credentials(username, password, role):
             st.success("Logged in successfully!")
-            st.experimental_singleton("current_user")
+            st.experimental_singleton("current_user", cache_type="local")
             st.experimental_singleton("current_role", role)
             st.experimental_rerun()
         else:
