@@ -68,6 +68,7 @@ def update_user_role(username, role):
         UPDATE users SET role=? WHERE username=?
     ''', (role, username))
     conn.commit()
+
 # Function to add a project to the database
 def add_project(name, status):
     cursor.execute('''
@@ -109,6 +110,104 @@ def get_comments_by_task(task_id):
         SELECT * FROM comments WHERE task_id=?
     ''', (task_id,))
     return cursor.fetchall()
+
+# Function to check the credentials of a user
+def check_credentials(username, password):
+    user = get_user(username)
+    if user is not None:
+        if user[2] == password:
+            return True
+    return False
+
+# Function to get the role of a user
+def get_user_role(username):
+    user = get_user(username)
+    if user is not None:
+        return user[3]
+    return None
+
+# Function to get all users from the database
+def get_all_users():
+    cursor.execute('''
+        SELECT username, role FROM users
+    ''')
+    return cursor.fetchall()
+
+# Function to delete a user from the database
+def delete_user(username):
+    cursor.execute('''
+        DELETE FROM users WHERE username=?
+    ''', (username,))
+    conn.commit()
+
+# Function to create a project
+def create_project(name, username):
+    add_project(name, 'Active')
+
+# Function to create a task
+def create_task(name, description, deadline, repeat, team_members, username):
+    # Retrieve the project ID based on the project name
+    project_id = get_project_id_by_name(name)
+
+    # Add the task to the database
+    add_task(project_id, name, description, deadline, 'Pending')
+
+# Function to get the project ID based on the project name
+def get_project_id_by_name(name):
+    cursor.execute('''
+        SELECT id FROM projects WHERE name=?
+    ''', (name,))
+    result = cursor.fetchone()
+    if result is not None:
+        return result[0]
+    return None
+
+# Function to get team members for a specific user
+def get_team_members(username):
+    cursor.execute('''
+        SELECT username FROM users WHERE role='Team Member' AND username!=?
+    ''', (username,))
+    return [member[0] for member in cursor.fetchall()]
+
+# Function to get assigned tasks for a specific user
+def get_assigned_tasks(username):
+    cursor.execute('''
+        SELECT t.name AS task_name, t.status
+        FROM tasks AS t
+        INNER JOIN projects AS p ON t.project_id = p.id
+        WHERE p.name IN (
+            SELECT name FROM projects WHERE status='Active'
+        ) AND ? IN (
+            SELECT username FROM users WHERE role='Team Member'
+        )
+    ''', (username,))
+    return cursor.fetchall()
+
+# Function to update the status of a task
+def update_task_status(task_name, status):
+    cursor.execute('''
+        UPDATE tasks SET status=? WHERE name=?
+    ''', (status, task_name))
+    conn.commit()
+
+# Function to add a comment to a task
+def add_task_comment(task_name, comment_text, username):
+    # Retrieve the task ID based on the task name
+    task_id = get_task_id_by_name(task_name)
+
+    # Add the comment to the database
+    add_comment(task_id, comment_text)
+
+# Function to get the task ID based on the task name
+def get_task_id_by_name(name):
+    cursor.execute('''
+        SELECT id FROM tasks WHERE name=?
+    ''', (name,))
+    result = cursor.fetchone()
+    if result is not None:
+        return result[0]
+    return None
+
 # Main program
 def main():
     st.title('Task Manager')
@@ -168,6 +267,7 @@ def render_admin_dashboard():
         update_user_role(update_username, update_role)
         st.success('Role updated successfully')
         st.experimental_rerun()
+
 # Render the Team Head dashboard
 def render_team_head_dashboard(username):
     st.subheader(f'Team Head Dashboard ({username})')
@@ -183,26 +283,15 @@ def render_team_head_dashboard(username):
     task_name = st.text_input('Task Name')
     task_description = st.text_area('Task Description')
     task_deadline = st.date_input('Task Deadline')
-    task_repeat = st.selectbox('Repeat Task', ['Daily', 'Weekly', 'No'])
     team_members = st.multiselect('Team Members', get_team_members(username))
     if st.button('Create Task'):
-        create_task(task_name, task_description, task_deadline, task_repeat, team_members, username)
+        create_task(task_name, task_description, task_deadline, team_members, username)
         st.success('Task created successfully')
         st.experimental_rerun()
 
 # Render the Team Member dashboard
 def render_team_member_dashboard(username):
     st.subheader(f'Team Member Dashboard ({username})')
-
-    # Punch in - punch out
-    if st.button('Punch In'):
-        punch_in(username)
-        st.success('You are now punched in')
-        st.experimental_rerun()
-    if st.button('Punch Out'):
-        punch_out(username)
-        st.success('You are now punched out')
-        st.experimental_rerun()
 
     # View your assigned tasks
     tasks = get_assigned_tasks(username)
@@ -213,16 +302,20 @@ def render_team_member_dashboard(username):
     update_status = st.selectbox('New Status', ['Pending', 'In Progress', 'Completed', 'Cancelled'])
     if st.button('Update Status'):
         update_task_status(update_task, update_status)
-        st.success('Status updated successfully')
+        st.success('Task status updated successfully')
         st.experimental_rerun()
 
-    # Add a comment or remark for a task
-    comment_task = st.selectbox('Select Task to Add Comment', [task['task_name'] for task in tasks])
-    comment_text = st.text_input('Comment')
+    # Add a comment to a task
+    comment_task = st.selectbox('Select Task to Comment', [task['task_name'] for task in tasks])
+    comment_text = st.text_area('Comment')
     if st.button('Add Comment'):
         add_task_comment(comment_task, comment_text, username)
         st.success('Comment added successfully')
         st.experimental_rerun()
 
+# Run the main program
 if __name__ == '__main__':
     main()
+
+
+
