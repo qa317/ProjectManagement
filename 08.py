@@ -212,6 +212,11 @@ def get_task_id_by_name(name):
 def main():
     st.title('Task Manager')
 
+    # Check if the default admin user exists, if not, add it
+    if get_user('admin') is None:
+        add_user('admin', 'admin@123#', 'Admin')
+        st.success('Default admin user added successfully')
+
     # Login
     st.subheader('Login')
     username = st.text_input('Username')
@@ -235,6 +240,7 @@ def main():
                 st.error('Invalid user role')
         else:
             st.error('Invalid username or password')
+
 
 # Render the Admin dashboard
 def render_admin_dashboard():
@@ -313,7 +319,7 @@ def render_team_member_dashboard(username):
         st.success('Comment added successfully')
         st.experimental_rerun()
 
-add_user('admin', 'admin_password', 'Admin')        
+      
         
 # Run the main program
 if __name__ == '__main__':
