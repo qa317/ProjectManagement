@@ -255,7 +255,8 @@ def render_admin_dashboard():
 
     # Show a table of all the users and their roles
     users = get_all_users()
-    st.write(pd.DataFrame(users, columns=['Username', 'Role']))
+    user_table = pd.DataFrame(users, columns=['Username', 'Role'])
+    st.write(user_table)
 
     # Add a new user
     new_username = st.text_input('New Username')
@@ -267,19 +268,20 @@ def render_admin_dashboard():
         st.experimental_rerun()
 
     # Delete a user
-    delete_username = st.selectbox('Select User to Delete', [user['username'] for user in users])
+    delete_username = st.selectbox('Select User to Delete', [user[0] for user in users])
     if st.button('Delete User'):
         delete_user(delete_username)
         st.success('User deleted successfully')
         st.experimental_rerun()
 
     # Update a user's role
-    update_username = st.selectbox('Select User to Update', [user['username'] for user in users])
+    update_username = st.selectbox('Select User to Update', [user[0] for user in users])
     update_role = st.selectbox('New Role', ['Team Head', 'Team Member'])
     if st.button('Update Role'):
         update_user_role(update_username, update_role)
         st.success('Role updated successfully')
         st.experimental_rerun()
+
 
 # Render the Team Head dashboard
 def render_team_head_dashboard(username):
