@@ -1,0 +1,277 @@
+import streamlit as st
+import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
+
+# Google Sheets configuration
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+gc = gspread.authorize(credentials)
+spreadsheet_key = '1852e9675f62173f66a254e33ddaf92edd131059'
+
+# Open the Google Sheet
+sheet_users = gc.open_by_key(spreadsheet_key).worksheet('users')
+sheet_projects = gc.open_by_key(spreadsheet_key).worksheet('projects')
+sheet_tasks = gc.open_by_key(spreadsheet_key).worksheet('tasks')
+sheet_comments = gc.open_by_key(spreadsheet_key).worksheet('comments')
+sheet_timesheets = gc.open_by_key(spreadsheet_key).worksheet('timesheets')
+
+# Function to add a user to the database
+def add_user(username, password, role):
+    sheet_users.append_row([username, password, role])
+
+# Function to retrieve a user from the database by username
+def get_user(username):
+    user_rows = sheet_users.get_all_values()
+    for row in user_rows[1:]:
+        if row[0] == username:
+            return row
+    return None
+
+# Function to update a user's role in the database
+def update_user_role(username, role):
+    user_rows = sheet_users.get_all_values()
+    for i, row in enumerate(user_rows[1:], start=2):
+        if row[0] == username:
+            sheet_users.update_cell(i, 3, role)
+            break
+
+# Function to add a project to the database
+def add_project(name, status):
+    sheet_projects.append_row([name, status])
+
+# Function to retrieve all projects from the database
+def get_all_projects():
+    return sheet_projects.get_all_values()[1:]
+
+# Function to add a task to the database
+def add_task(project_id, name, description, deadline, status):
+    sheet_tasks.append_row([project_id, name, description, deadline, status])
+
+# Function to retrieve all tasks for a given project from the database
+def get_tasks_by_project(project_id):
+    tasks = sheet_tasks.get_all_values()[1:]
+    return [task for task in tasks if task[0] == project_id]
+
+# Function to add a comment to the database
+def add_comment(task_id, text):
+    sheet_comments.append_row([task_id, text])
+
+# Function to retrieve all comments for a given task from the database
+def get_comments_by_task(task_id):
+    comments = sheet_comments.get_all_values()[1:]
+    return [comment for comment in comments if comment[0] == task_id]
+
+# Function to check the credentials of a user
+def check_credentials(username, password):
+    user = get_user(username)
+    if user is not None:
+        if user[1] == password:
+            return True
+    return False
+
+# Function to get the role of a user
+def get_user_role(username):
+    user = get_user(username)
+    if user is not None:
+        return user[2]
+    return None
+
+# Function to get all users from the database
+def get_all_users():
+    return sheet_users.get_all_values()[1:]
+
+# Function to delete a user from the database
+def delete_user(username):
+    user_rows = sheet_users.get_all_values()
+    for i, row in enumerate(user_rows[1:], start=2):
+        if row[0] == username:
+            sheet_users.delete_row(i)
+            break
+
+# Function to add a timesheet entry for a user
+def add_timesheet_entry(username):
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    sheet_timesheets.append_row([username, current_time])
+
+# Function to retrieve timesheet entries for a user
+def get_timesheet_entries(username):
+    entries = sheet_timesheets.get_all_values()[1:]
+    return [entry for entry in entries if entry[0] == username]
+
+# Function to get the total working hours for a user
+def get_total_working_hours(username):
+    entries = get_timesheet_entries(username)
+    total_hours = 0
+    for entry in entries:
+        punch_in = datetime.strptime(entry[1], '%Y-%m-%d %H:%M:%S')
+        if len(entry) > 2:
+            punch_out = datetime.strptime(entry[2], '%Y-%m-%d %H:%M:%S')
+            working_hours = (punch_out - punch_in).total_seconds() / 3600
+            total_hours += working_hours
+    return total_hours
+# Function to retrieve all tasks assigned to a user from the database
+def get_tasks_by_user(username):
+    user_tasks = []
+    tasks = sheet_tasks.get_all_values()[1:]
+    for task in tasks:
+        project_id = task[0]
+        project = sheet_projects.cell(int(project_id), 1).value
+        if project:
+            team_head = sheet_users.cell(int(project), 1).value
+            if team_head == username:
+                user_tasks.append(task)
+    return user_tasks
+
+# Main program
+def main():
+    st.title('Task Manager')
+
+    # Login
+    st.subheader('Login')
+    username = st.text_input('Username')
+    password = st.text_input('Password', type='password')
+
+    if st.button('Login'):
+        # Check if the username and password are correct
+        if check_credentials(username, password):
+            st.success(f'Logged in as {username}')
+
+            # Get the user's role
+            role = get_user_role(username)
+
+            if role == 'Admin':
+                render_admin_dashboard()
+            elif role == 'Team Head':
+                render_team_head_dashboard(username)
+            elif role == 'Team Member':
+                render_team_member_dashboard(username)
+            else:
+                st.error('Invalid user role')
+        else:
+            st.error('Invalid username or password')
+
+# Render the Admin dashboard
+def render_admin_dashboard():
+    st.subheader('Admin Dashboard')
+
+    # Show a table of all the users and their roles
+    users = get_all_users()
+    st.write(pd.DataFrame(users, columns=['Username', 'Role']))
+
+    # Add a new user
+    new_username = st.text_input('New Username')
+    new_password = st.text_input('New Password', type='password')
+    new_role = st.selectbox('New Role', ['Team Head', 'Team Member'])
+    if st.button('Add User'):
+        add_user(new_username, new_password, new_role)
+        st.success('User added successfully')
+        st.experimental_rerun()
+
+    # Delete a user
+    delete_username = st.selectbox('Select User to Delete', [user[0] for user in users])
+    if st.button('Delete User'):
+        delete_user(delete_username)
+        st.success('User deleted successfully')
+        st.experimental_rerun()
+
+    # Update a user's role
+    update_username = st.selectbox('Select User to Update', [user[0] for user in users])
+    update_role = st.selectbox('New Role', ['Team Head', 'Team Member'])
+    if st.button('Update Role'):
+        update_user_role(update_username, update_role)
+        st.success('Role updated successfully')
+        st.experimental_rerun()
+
+# Render the Team Head dashboard
+def render_team_head_dashboard(username):
+    st.subheader(f'Team Head Dashboard ({username})')
+
+    # Create a new project
+    project_name = st.text_input('Project Name')
+    if st.button('Create Project'):
+        add_project(project_name, 'Active')
+        st.success(f'Project "{project_name}" created successfully')
+        st.experimental_rerun()
+
+    # Show a table of all the projects
+    projects = get_all_projects()
+    st.write(pd.DataFrame(projects, columns=['Project Name', 'Status']))
+
+    # Select a project to view its tasks
+    project_name_select = st.selectbox('Select Project', [project[0] for project in projects])
+    project_id = None
+    for project in projects:
+        if project[0] == project_name_select:
+            project_id = project[1]
+            break
+
+    if project_id is not None:
+        # Show a table of tasks for the selected project
+        tasks = get_tasks_by_project(project_id)
+        st.write(pd.DataFrame(tasks, columns=['Task Name', 'Description', 'Deadline', 'Status']))
+
+        # Add a new task for the selected project
+        task_name = st.text_input('Task Name')
+        task_description = st.text_input('Task Description')
+        task_deadline = st.date_input('Task Deadline')
+        task_status = st.selectbox('Task Status', ['To Do', 'In Progress', 'Completed'])
+        if st.button('Add Task'):
+            add_task(project_id, task_name, task_description, task_deadline, task_status)
+            st.success('Task added successfully')
+            st.experimental_rerun()
+
+        # Select a task to view its comments
+        task_name_select = st.selectbox('Select Task', [task[1] for task in tasks])
+        task_id = None
+        for task in tasks:
+            if task[1] == task_name_select:
+                task_id = task[0]
+                break
+
+        if task_id is not None:
+            # Show comments for the selected task
+            comments = get_comments_by_task(task_id)
+            st.write(pd.DataFrame(comments, columns=['User', 'Comment']))
+
+            # Add a new comment for the selected task
+            comment_text = st.text_input('Comment')
+            if st.button('Add Comment'):
+                add_comment(task_id, comment_text)
+                st.success('Comment added successfully')
+                st.experimental_rerun()
+
+# Render the Team Member dashboard
+def render_team_member_dashboard(username):
+    st.subheader(f'Team Member Dashboard ({username})')
+
+    # Show a table of all the tasks assigned to the user
+    tasks = get_tasks_by_user(username)
+    st.write(pd.DataFrame(tasks, columns=['Task Name', 'Description', 'Deadline', 'Status']))
+
+    # Select a task to view its comments
+    task_name_select = st.selectbox('Select Task', [task[1] for task in tasks])
+    task_id = None
+    for task in tasks:
+        if task[1] == task_name_select:
+            task_id = task[0]
+            break
+
+    if task_id is not None:
+        # Show comments for the selected task
+        comments = get_comments_by_task(task_id)
+        st.write(pd.DataFrame(comments, columns=['User', 'Comment']))
+
+        # Add a new comment for the selected task
+        comment_text = st.text_input('Comment')
+        if st.button('Add Comment'):
+            add_comment(task_id, comment_text)
+            st.success('Comment added successfully')
+            st.experimental_rerun()
+
+# Run the main program
+if __name__ == '__main__':
+    main()
+
+
