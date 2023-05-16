@@ -313,6 +313,8 @@ def render_team_member_dashboard(username):
         st.success('Comment added successfully')
         st.experimental_rerun()
 
+add_user('admin', 'admin_password', 'Admin')        
+        
 # Run the main program
 if __name__ == '__main__':
     main()
