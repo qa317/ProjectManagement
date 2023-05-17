@@ -216,7 +216,7 @@ def get_task_id_by_name(name):
     return None
 
 # Main program
-st.cache_data(allow_output_mutation=True)
+
 def get_connection():
     conn = sqlite3.connect('task_manager.db')
     return conn
