@@ -1,3 +1,4 @@
+pip install flask
 import streamlit as st
 import pandas as pd
 import sqlite3
