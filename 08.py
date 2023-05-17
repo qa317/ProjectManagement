@@ -254,11 +254,13 @@ def main():
         else:
             st.error('Invalid username or password')
 
+# Global cache variable
+cache = {}
 
 # Render the Admin dashboard
-st.cache_data(allow_output_mutation=True)
 def render_admin_dashboard():
-    st.subheader('Admin Dashboard')
+    if 'admin_dashboard' not in cache:
+        st.subheader('Admin Dashboard')
 
     # Show a table of all the users and their roles
     users = get_all_users()
@@ -288,13 +290,13 @@ def render_admin_dashboard():
         update_user_role(update_username, update_role)
         st.success('Role updated successfully')
         st.experimental_rerun()
-
+    cache['admin_dashboard'] = True
 
 
 # Render the Team Head dashboard
-st.cache_data(allow_output_mutation=True)
 def render_team_head_dashboard(username):
-    st.subheader(f'Team Head Dashboard ({username})')
+    if 'team_head_dashboard' not in cache:
+        st.subheader(f'Team Head Dashboard ({username})')
 
     # Create a new project
     project_name = st.text_input('Project Name')
@@ -312,11 +314,13 @@ def render_team_head_dashboard(username):
         create_task(task_name, task_description, task_deadline, team_members, username)
         st.success('Task created successfully')
         st.experimental_rerun()
+        
+        cache['team_head_dashboard'] = True
 
 # Render the Team Member dashboard
-st.cache_data(allow_output_mutation=True)
 def render_team_member_dashboard(username):
-    st.subheader(f'Team Member Dashboard ({username})')
+    if 'team_member_dashboard' not in cache:
+        st.subheader(f'Team Member Dashboard ({username})')
 
     # View your assigned tasks
     tasks = get_assigned_tasks(username)
@@ -337,9 +341,9 @@ def render_team_member_dashboard(username):
         add_task_comment(comment_task, comment_text, username)
         st.success('Comment added successfully')
         st.experimental_rerun()
-
-      
         
+        cache['team_member_dashboard'] = True
+               
 # Run the main program
 if __name__ == '__main__':
     main()
