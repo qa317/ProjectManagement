@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import os
-from extra_streamlit_components import cookie_manager
+#from extra_streamlit_components import cookie_manager
 
 # Remove the existing database file
 if os.path.exists('task_manager.db'):
