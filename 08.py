@@ -265,7 +265,7 @@ def main():
             st.error('Invalid username or password')
 
     # Add cookie manager component
-    cookie_manager(conn)
+    #cookie_manager(conn)
 
 # Global cache variable
 cache = {}
