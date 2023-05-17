@@ -297,8 +297,8 @@ def main():
                 render_team_member_dashboard(username)
             else:
                 st.error('Invalid user role')
-            else:
-                st.error('Invalid username or password')
+      else:
+        st.error('Invalid username or password')
 
 # Global cache variable
 cache = {}
