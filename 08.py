@@ -216,7 +216,7 @@ def get_task_id_by_name(name):
     return None
 
 # Main program
-@st.cache_resource(allow_output_mutation=True)
+st.cache_data(allow_output_mutation=True)
 def get_connection():
     conn = sqlite3.connect('task_manager.db')
     return conn
@@ -256,7 +256,7 @@ def main():
 
 
 # Render the Admin dashboard
-@st.cache_resource(allow_output_mutation=True)
+st.cache_data(allow_output_mutation=True)
 def render_admin_dashboard():
     st.subheader('Admin Dashboard')
 
@@ -292,7 +292,7 @@ def render_admin_dashboard():
 
 
 # Render the Team Head dashboard
-@st.cache_resource(allow_output_mutation=True)
+st.cache_data(allow_output_mutation=True)
 def render_team_head_dashboard(username):
     st.subheader(f'Team Head Dashboard ({username})')
 
@@ -314,7 +314,7 @@ def render_team_head_dashboard(username):
         st.experimental_rerun()
 
 # Render the Team Member dashboard
-@st.cache_resource(allow_output_mutation=True)
+st.cache_data(allow_output_mutation=True)
 def render_team_member_dashboard(username):
     st.subheader(f'Team Member Dashboard ({username})')
 
