@@ -229,6 +229,16 @@ def main():
     if get_user('admin') is None:
         add_user('admin', 'admin@123#', 'Admin')
         st.success('Default admin user added successfully')
+    
+    # Check if the default team head user exists, if not, add it
+    if get_user('teamhead') is None:
+        add_user('teamhead', 'head@123#', 'Team Head')
+        st.success('Default team head user added successfully')
+
+    # Check if the default team member user exists, if not, add it
+    if get_user('teammember') is None:
+        add_user('teammember', 'member@123#', 'Team Member')
+        st.success('Default team member user added successfully')
 
     # Login
     st.subheader('Login')
