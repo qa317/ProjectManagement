@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import os
+from flask import Flask, make_response, request
 
 # Remove the existing database file
 if os.path.exists('task_manager.db'):
@@ -54,6 +55,37 @@ cursor.execute('''
     )
 ''')
 
+# Initialize Flask app
+app = Flask(__name__)
+
+# Set a secret key for secure cookie encoding
+app.secret_key = "admin09"
+# Function to retrieve session data from cookies
+def get_session_data():
+    session_id = request.cookies.get("session_id")
+    session_data = request.cookies.get("session_data")
+
+    if session_id is None or session_data is None:
+        # No session data found, create a new session
+        session_id = "session1"
+        session_data = {"username": "", "role": ""}
+    else:
+        # Parse session data from string to dictionary
+        session_data = eval(session_data)
+
+    return session_id, session_data
+
+# Function to store session data in cookies
+def store_session_data(session_id, session_data):
+    # Convert session data dictionary to string
+    session_data_str = str(session_data)
+
+    # Store session data in cookies
+    response = make_response()
+    response.set_cookie("session_id", session_id)
+    response.set_cookie("session_data", session_data_str)
+
+    return response
 # Function to add a user to the database
 def add_user(username, password, role):
     cursor.execute('''
@@ -215,13 +247,8 @@ def get_task_id_by_name(name):
     return None
 
 # Main program
-
-def get_connection():
-    conn = sqlite3.connect('task_manager.db')
-    return conn
-
 def main():
-    conn = get_connection()
+    conn = sqlite3.connect('task_manager.db')
     st.title('Task Manager')
 
     # Check if the default admin user exists, if not, add it
@@ -238,6 +265,9 @@ def main():
     if get_user('teammember') is None:
         add_user('teammember', 'member@123#', 'Team Member')
         st.success('Default team member user added successfully')
+    # Retrieve session data from cookies
+    session_id, session_data = get_session_data()
+
 
     # Login
     st.subheader('Login')
@@ -251,6 +281,13 @@ def main():
 
             # Get the user's role
             role = get_user_role(username)
+            session_data["username"] = username
+            session_data["role"] = role
+            
+            # Store updated session data in cookies
+            return store_session_data(session_id, session_data)
+        else:
+            st.error('Invalid username or password')
 
             if role == 'Admin':
                 render_admin_dashboard()
@@ -354,8 +391,12 @@ def render_team_member_dashboard(username):
         cache['team_member_dashboard'] = True
                
 # Run the main program
+@app.route('/')
+def run_app():
+    return main()
+
 if __name__ == '__main__':
-    main()
+    app.run()
 
 
 
